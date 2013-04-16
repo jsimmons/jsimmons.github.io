@@ -1,0 +1,9 @@
+title: Josh Simmons
+tagline: programming and stuff
+
+destination: ./_site
+auto: true
+safe: true
+permalink: date
+pygments: true
+lsi: false
