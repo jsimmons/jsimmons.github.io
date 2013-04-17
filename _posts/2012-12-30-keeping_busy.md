@@ -43,6 +43,7 @@ read backwards.
 You submit a number of tasks, optionally giving a parent, and get a number of
 handles back. This stages the tasks but does not queue them for execution.
 
+```C
     typedef struct RdxTask
     {
         void *user_data;
@@ -53,6 +54,7 @@ handles back. This stages the tasks but does not queue them for execution.
     void
     rdx_task_submit(RdxTaskPool *self, RdxTaskHandle parent, RdxTask *tasks,
             RdxTaskHandle *out_task_handles, size_t num_tasks);
+```
 
 Note that we pass the parent task only once per submit call, but the
 `allows_to_start` is defined once per task. This is just simpler to code, it
@@ -66,8 +68,10 @@ themselves stage, enqueue and even wait on more tasks.
 Once we've submitted enough tasks to get running we can enqueue tasks which
 schedules them for execution in the priority queue.
 
+```C
     void
     rdx_task_enqueue(RdxTaskPool *self, int priority, RdxTaskHandle task);
+```
 
 We give the priority here once again to simplify the implementation. Each task
 scheduled from another task inherits that task's priority. It's yet to be seen
@@ -77,8 +81,10 @@ all.
 Now we have some tasks and they're probably off getting executed so we might
 want to block this thread until they do complete.
 
+```C
     void
     rdx_task_wait(RdxTaskPool *self, RdxTaskHandle task);
+```
 
 Wait just spins checking if the task given still exists and if so, if there are
 work items to dequeue and execute. This busy loop has a nasty case if a thread
