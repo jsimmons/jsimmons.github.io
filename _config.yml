@@ -5,6 +5,6 @@ destination: ./_site
 auto: true
 safe: true
 permalink: date
-markdown: redcarpet
+markdown: redcarpet2
 pygments: true
 lsi: false
