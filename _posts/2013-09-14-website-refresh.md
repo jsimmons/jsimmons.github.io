@@ -30,5 +30,5 @@ and MathJax
 \dot{z} & = -\beta z + xy
 \end{aligned}
 
-It's all very exciting but I probably won't write anything worth reading so
-I'm not really sure if it was worth the afternoon's work.
+It's all very exciting stuff, no doubt this will lead to countless deeply
+informative and insightful posts.
