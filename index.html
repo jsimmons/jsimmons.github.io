@@ -3,9 +3,14 @@ layout: default
 title: Josh Simmons
 ---
 
-<ul class="posts">
-{% for post in site.posts %}
-<li><a href="{{ post.url }}">{{ post.title }}</a></li>
-{% endfor %}
-</ul>
-
+    <div class="posts">
+        {% for post in site.posts %}
+        <article>
+            <small class="pull-right text-muted">{{ post.date | date_to_string }}</small>
+            <h3><a href="{{ post.url }}">{{ post.title }}</a></h3>
+            <div class="content">
+                {{ post.content }}
+            </div>
+        </article>
+        {% endfor %}
+    </div>

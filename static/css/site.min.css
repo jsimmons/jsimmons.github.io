@@ -1,7 +1,11 @@
 body{font-family:Helvetica}
 pre {color:#fefefe;background:#333;}
-header{border-bottom:2px solid #333;}
-@media(min-width:768px){.container{max-width:730px;}}
+header{border-bottom:1px solid #333;}
+header h1 a{color:#d2322d;}
+article{margin:2em 0;}
+.posts{list-style:none;padding:0;}
+.posts li{margin:0.5em 0;}
+@media(min-width:768px){.container{max-width:768px;}}
 .container-narrow>hr{margin:30px 0;}
 .hll{background-color:#49483e}
 .c{color:#75715e}
