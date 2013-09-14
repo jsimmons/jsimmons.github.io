@@ -13,25 +13,26 @@
     <head>
         <meta charset="utf-8" />
         <title>{{ page.title }}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <link rel="stylesheet" href="/static/site.min.css" />
-
-        <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-        <script type="text/javascript">var _gaq = _gaq || [];_gaq.push(['_setAccount', 'UA-40186400-1']);_gaq.push(['_trackPageview']);(function() {var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);})();</script>
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="/static/css/bootstrap-theme.min.css" />
+        <link rel="stylesheet" href="/static/css/site.min.css" />
     </head>
 
     <body>
-        <div class="wrapper">
+        <div class="container">
             <header>
+                <ul class="nav nav-pills pull-right">
+                    <li><a href="/">Blog</a></li>
+                    <li><a href="/about/">About</a></li>
+                </ul>
+
                 <h1><a href="/">{{site.title}}</a></h1>
 
-                <dl>
-                    <dd><a href="twitter.com/dotstdy">twitter</a></dd>
-                    <dd><a href="github.com/jsimmons">github</a></dd>
-                </dl>
-
-                <dl>
-                    <dd><a href="au.linkedin.com/in/joshrsimmons/">linkedin</a></dd>
-                    <dd><a href="mailto:simmons44@gmail.com">simmons44@gmail.com</a></dd>
-                </dl>
+                <ul class="list-inline">
+                    <li><a href="https://twitter.com/dotstdy">twitter</a></li>
+                    <li><a href="https://github.com/jsimmons">github</a></li>
+                    <li><a href="mailto:simmons44@gmail.com">email</a></li>
+                </ul>
             </header>

@@ -1,10 +1,11 @@
 title: Josh Simmons
 tagline: programming and stuff
 
+pagination: 5
 destination: ./_site
 auto: true
 safe: true
 permalink: date
-markdown: redcarpet2
+markdown: redcarpet
 pygments: true
 lsi: false

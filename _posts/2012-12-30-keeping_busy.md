@@ -43,7 +43,7 @@ read backwards.
 You submit a number of tasks, optionally giving a parent, and get a number of
 handles back. This stages the tasks but does not queue them for execution.
 
-```C
+```c
     typedef struct RdxTask
     {
         void *user_data;
@@ -68,7 +68,7 @@ themselves stage, enqueue and even wait on more tasks.
 Once we've submitted enough tasks to get running we can enqueue tasks which
 schedules them for execution in the priority queue.
 
-```C
+```c
     void
     rdx_task_enqueue(RdxTaskPool *self, int priority, RdxTaskHandle task);
 ```
@@ -81,7 +81,7 @@ all.
 Now we have some tasks and they're probably off getting executed so we might
 want to block this thread until they do complete.
 
-```C
+```c
     void
     rdx_task_wait(RdxTaskPool *self, RdxTaskHandle task);
 ```
