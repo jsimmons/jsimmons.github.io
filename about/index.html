@@ -3,3 +3,339 @@ layout: default
 title: About
 ---
 
+<canvas id="demo">
+</canvas>
+
+<script id="vert_shader" type="x-shader/x-vertex">
+attribute vec3 position;
+
+uniform mat4 clip_from_camera;
+uniform mat4 camera_from_model;
+
+varying mediump vec4 vert_color;
+
+void main(void) {
+    gl_Position = clip_from_camera * camera_from_model * vec4(position, 1.0);
+    vert_color = vec4(1.0, 1.0, 1.0, 1.0);
+}
+</script>
+
+<script id="frag_shader" type="x-shader/x-fragment">
+varying mediump vec4 vert_color;
+
+void main(void) {
+    gl_FragColor = vert_color;
+}
+</script>
+
+<script>
+var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+function create_shader(id) {
+    var shaderElement = document.getElementById(id);
+    if(!shaderElement) { return null; }
+
+    var source = "";
+    var current = shaderElement.firstChild;
+    while(current) {
+        if(current.nodeType == current.TEXT_NODE) {
+            source += current.textContent;
+        }
+
+        current = current.nextSibling;
+    }
+
+    var shader;
+    if(shaderElement.type == 'x-shader/x-vertex') {
+        shader = gl.createShader(gl.VERTEX_SHADER);
+    } else if(shaderElement.type == 'x-shader/x-fragment') {
+        shader = gl.createShader(gl.FRAGMENT_SHADER);
+    } else {
+        console.log("invalid shader type: " + shaderElement.type);
+        return null;
+    }
+
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if(!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.log("could not compile shader: " + gl.getShaderInfoLog(shader));
+        return null;
+    }
+
+    return shader;
+}
+
+function create_program(vertex_shader_id, fragment_shader_id) {
+    var vertex_shader = create_shader(vertex_shader_id);
+    var fragment_shader = create_shader(fragment_shader_id);
+    var program = gl.createProgram();
+    gl.attachShader(program, vertex_shader);
+    gl.attachShader(program, fragment_shader);
+    gl.linkProgram(program);
+
+    if(!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.log("could not link program: " + gl.getProgramInfoLog(program));
+        return null;
+    }
+
+    return program;
+}
+
+function vec3_sub(lhs, rhs) {
+    var r = new Float32Array(3);
+    r[0] = lhs[0] - rhs[0];
+    r[1] = lhs[1] - rhs[1];
+    r[2] = lhs[2] - rhs[2];
+    return r;
+}
+
+function vec3_mag_sq(v) {
+    return v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
+}
+
+function vec3_mag(v) {
+    return Math.sqrt(vec3_mag_sq(v));
+}
+
+function vec3_norm(v) {
+    var r = new Float32Array(3);
+    var mag_sq = vec3_mag_sq(v);
+    if(mag_sq == 0.0) {
+        return r;
+    }
+    var inv_mag = 1.0 / Math.sqrt(mag_sq);
+    r[0] = v[0] * inv_mag;
+    r[1] = v[1] * inv_mag;
+    r[2] = v[2] * inv_mag;
+    return r;
+}
+
+function vec3_dot(lhs, rhs) {
+    return lhs[0] * rhs[0] + lhs[1] * rhs[1] + lhs[2] * rhs[2];
+}
+
+function vec3_cross(lhs, rhs) {
+    var r = new Float32Array(3);
+    r[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
+    r[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
+    r[2] = lhs[0] * rhs[1] - lhs[1] * rhs[0];
+    return r;
+}
+
+function make_perspective(fov, aspect, near, far) {
+    var M = new Float32Array(16);
+
+    var e = 1.0 / Math.tan(fov / 2.0);
+    M[0]  = e / aspect;
+    M[5]  = e;
+    M[10] = -((far + near) / (far - near));
+    M[11] = -1.0;
+    M[14] = -((2.0 * far * near) / (far - near));
+
+    return M;
+}
+
+function make_ortho(left, right, bottom, top, near, far) {
+    var M = new Float32Array(16);
+
+    var a = 2.0 / (right - left);
+    var b = 2.0 / (top - bottom);
+    var c = -(2.0 / (far - near));
+    var d = -((right + left) / (right - left));
+    var e = -((top + bottom) / (top - bottom));
+    var f = -((far + near) / (far - near));
+
+    M[0]  = a;
+    M[5]  = b;
+    M[10] = c;
+    M[12] = d;
+    M[13] = e;
+    M[14] = f;
+    M[15] = 1.0;
+
+    return M;
+}
+
+function make_look_at(eye, at, up) {
+    var R = new Float32Array(16);
+
+    up          = vec3_norm(up);
+    var forward = vec3_norm(vec3_sub(at, eye));
+    var side    = vec3_norm(vec3_cross(forward, up));
+    var view_up = vec3_cross(side, forward);
+
+    R[0]  = side[0];
+    R[4]  = side[1];
+    R[8]  = side[2];
+    R[12] = -vec3_dot(side, eye);
+
+    R[1]  = view_up[0];
+    R[5]  = view_up[1];
+    R[9]  = view_up[2];
+    R[13] = -vec3_dot(view_up, eye);
+
+    R[2]  = -forward[0];
+    R[6]  = -forward[1];
+    R[10] = -forward[2];
+    R[14] = vec3_dot(forward, eye);
+
+    R[15] = 1.0;
+
+    return R;
+}
+
+function make_rotate_y(angle) {
+    var R = new Float32Array(16);
+
+    var c = Math.cos(angle);
+    var s = Math.sin(angle);
+    R[0]  = c;
+    R[2]  = -s;
+    R[5]  = 1.0;
+    R[8]  = s;
+    R[10] = c;
+    R[15] = 1.0;
+
+    return R;
+}
+
+function mat4_mul(lhs, rhs, R) {
+    var R = new Float32Array(16);
+
+    R[0]  = lhs[0] * rhs[0] + lhs[4] * rhs[1] + lhs[8]  * rhs[2] + lhs[12] * rhs[3];
+    R[1]  = lhs[1] * rhs[0] + lhs[5] * rhs[1] + lhs[9]  * rhs[2] + lhs[13] * rhs[3];
+    R[2]  = lhs[2] * rhs[0] + lhs[6] * rhs[1] + lhs[10] * rhs[2] + lhs[14] * rhs[3];
+    R[3]  = lhs[3] * rhs[0] + lhs[7] * rhs[1] + lhs[11] * rhs[2] + lhs[15] * rhs[3];
+
+    R[4]  = lhs[0] * rhs[4] + lhs[4] * rhs[5] + lhs[8]  * rhs[6] + lhs[12] * rhs[7];
+    R[5]  = lhs[1] * rhs[4] + lhs[5] * rhs[5] + lhs[9]  * rhs[6] + lhs[13] * rhs[7];
+    R[6]  = lhs[2] * rhs[4] + lhs[6] * rhs[5] + lhs[10] * rhs[6] + lhs[14] * rhs[7];
+    R[7]  = lhs[3] * rhs[4] + lhs[7] * rhs[5] + lhs[11] * rhs[6] + lhs[15] * rhs[7];
+
+    R[8]  = lhs[0] * rhs[8] + lhs[4] * rhs[9] + lhs[8]  * rhs[10] + lhs[12] * rhs[11];
+    R[9]  = lhs[1] * rhs[8] + lhs[5] * rhs[9] + lhs[9]  * rhs[10] + lhs[13] * rhs[11];
+    R[10] = lhs[2] * rhs[8] + lhs[6] * rhs[9] + lhs[10] * rhs[10] + lhs[14] * rhs[11];
+    R[11] = lhs[3] * rhs[8] + lhs[7] * rhs[9] + lhs[11] * rhs[10] + lhs[15] * rhs[11];
+
+    R[12] = lhs[0] * rhs[12] + lhs[4] * rhs[13] + lhs[8]  * rhs[14] + lhs[12] * rhs[15];
+    R[13] = lhs[1] * rhs[12] + lhs[5] * rhs[13] + lhs[9]  * rhs[14] + lhs[13] * rhs[15];
+    R[14] = lhs[2] * rhs[12] + lhs[6] * rhs[13] + lhs[10] * rhs[14] + lhs[14] * rhs[15];
+    R[15] = lhs[3] * rhs[12] + lhs[7] * rhs[13] + lhs[11] * rhs[14] + lhs[15] * rhs[15];
+
+    return R;
+}
+
+var I = new Float32Array([
+    1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, 0.0, 1.0
+]);
+
+var cube_vertices = new Float32Array([
+    -1.0,  1.0,  1.0,
+     1.0,  1.0,  1.0,
+    -1.0, -1.0,  1.0,
+     1.0, -1.0,  1.0,
+    -1.0,  1.0, -1.0,
+     1.0,  1.0, -1.0,
+    -1.0, -1.0, -1.0,
+     1.0, -1.0, -1.0
+]);
+
+var cube_indices = new Uint16Array([
+    0, 1, 2,
+    1, 3, 2,
+    4, 6, 5,
+    5, 6, 7,
+    0, 2, 4,
+    2, 4, 6,
+    1, 5, 3,
+    5, 7, 3,
+    0, 4, 1,
+    4, 5, 1,
+    2, 3, 6,
+    6, 3, 7
+]);
+
+var canvas = document.getElementById("demo");
+
+var shader_program;
+var cube_vertices_buffer;
+var cube_indices_buffer;
+
+var clip_from_camera;
+var camera_from_world;
+var world_from_model;
+
+var clip_from_camera_location;
+var camera_from_model_location;
+
+var position_location;
+var color_location;
+
+var resize = function(w, h) {
+    canvas.width = w;
+    canvas.height = h;
+    gl.viewport(0, 0, w, h);
+
+    var aspect = w / h;
+
+    clip_from_camera = make_perspective(Math.PI / 2.0, aspect, 0.1, 150.0);
+    gl.uniformMatrix4fv(clip_from_camera_location, false, clip_from_camera);
+}
+
+var init = function() {
+    shader_program = create_program('vert_shader', 'frag_shader');
+    gl.useProgram(shader_program);
+
+    cube_vertices_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cube_vertices_buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, cube_vertices, gl.STATIC_DRAW);
+
+    cube_indices_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cube_indices_buffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, cube_indices, gl.STATIC_DRAW);
+
+    position_location = gl.getAttribLocation(shader_program, "position");
+
+    gl.enableVertexAttribArray(position_location);
+    gl.vertexAttribPointer(position_location, 3, gl.FLOAT, false, 0, 0);
+
+    clip_from_camera_location  = gl.getUniformLocation(shader_program, "clip_from_camera");
+    camera_from_model_location = gl.getUniformLocation(shader_program, "camera_from_model");
+
+    camera_from_world = make_look_at(
+            new Float32Array([5.0, 2.5, 5.0]),  // eye position
+            new Float32Array([0.0, 0.0, 0.0]),  // look_at position
+            new Float32Array([0.0, 1.0, 0.0])); // up vector
+
+    resize(canvas.width, canvas.height);
+}
+
+var render = function(t) {
+    requestAnimationFrame(render);
+
+    if(canvas.width != canvas.clientWidth || canvas.height != canvas.clientHeight) {
+        resize(canvas.clientWidth, canvas.clientHeight);
+    }
+
+    gl.clearColor((Math.sin(t * 0.001) + 1.0) / 2.0, 0.808, 0.922, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    var world_from_model = make_rotate_y(t * 0.001);
+    var camera_from_model = mat4_mul(camera_from_world, world_from_model);
+    gl.uniformMatrix4fv(camera_from_model_location, false, camera_from_model);
+
+    gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
+}
+
+try {
+    gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+} catch(e) { gl = null; }
+
+if(gl) {
+    init();
+    requestAnimationFrame(render);
+}
+</script>
