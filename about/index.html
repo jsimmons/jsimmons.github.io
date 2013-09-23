@@ -232,37 +232,27 @@ var I = new Float32Array([
     0.0, 0.0, 0.0, 1.0
 ]);
 
-var cube_vertices = new Float32Array([
-    -1.0,  1.0,  1.0,
-     1.0,  1.0,  1.0,
-    -1.0, -1.0,  1.0,
-     1.0, -1.0,  1.0,
-    -1.0,  1.0, -1.0,
-     1.0,  1.0, -1.0,
-    -1.0, -1.0, -1.0,
-     1.0, -1.0, -1.0
+var bird_vertices = new Float32Array([
+     0.5,  0.0,  0.0,
+    -0.2,  0.1,  0.0,
+    -0.5,  0.0, -0.25,
+    -0.5,  0.0,  0.25
 ]);
 
-var cube_indices = new Uint16Array([
-    0, 1, 2,
-    1, 3, 2,
-    4, 6, 5,
-    5, 6, 7,
-    0, 2, 4,
-    2, 4, 6,
-    1, 5, 3,
-    5, 7, 3,
-    0, 4, 1,
-    4, 5, 1,
-    2, 3, 6,
-    6, 3, 7
+var bird_indices = new Uint16Array([
+    0, 1, 3,
+    0, 1, 2
 ]);
 
 var canvas = document.getElementById("demo");
 
+var num_boids = 100;
+var boid_positions;
+var boid_velocities;
+
 var shader_program;
-var cube_vertices_buffer;
-var cube_indices_buffer;
+var bird_vertices_buffer;
+var bird_indices_buffer;
 
 var clip_from_camera;
 var camera_from_world;
@@ -286,16 +276,20 @@ var resize = function(w, h) {
 }
 
 var init = function() {
+    boid_colors     = new Uint32Array(num_boids);
+    boid_positions  = new Float32Array(2 * num_boids);
+    boid_velocities = new Float32Array(2 * num_boids);
+
     shader_program = create_program('vert_shader', 'frag_shader');
     gl.useProgram(shader_program);
 
-    cube_vertices_buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, cube_vertices_buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, cube_vertices, gl.STATIC_DRAW);
+    bird_vertices_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bird_vertices_buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, bird_vertices, gl.STATIC_DRAW);
 
-    cube_indices_buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cube_indices_buffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, cube_indices, gl.STATIC_DRAW);
+    bird_indices_buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bird_indices_buffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, bird_indices, gl.STATIC_DRAW);
 
     position_location = gl.getAttribLocation(shader_program, "position");
 
@@ -306,7 +300,7 @@ var init = function() {
     camera_from_model_location = gl.getUniformLocation(shader_program, "camera_from_model");
 
     camera_from_world = make_look_at(
-            new Float32Array([5.0, 2.5, 5.0]),  // eye position
+            new Float32Array([5.0, 10.0, 5.0]),  // eye position
             new Float32Array([0.0, 0.0, 0.0]),  // look_at position
             new Float32Array([0.0, 1.0, 0.0])); // up vector
 
@@ -327,7 +321,7 @@ var render = function(t) {
     var camera_from_model = mat4_mul(camera_from_world, world_from_model);
     gl.uniformMatrix4fv(camera_from_model_location, false, camera_from_model);
 
-    gl.drawElements(gl.TRIANGLES, 36, gl.UNSIGNED_SHORT, 0);
+    gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
 }
 
 try {
